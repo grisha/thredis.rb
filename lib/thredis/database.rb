@@ -57,10 +57,8 @@ module Thredis
       end
     end
 
-    #ZZZZZ FIXME
     def last_insert_row_id
-      puts "LAST INSERT ROW ID"
-      1
+      nil # not supported here ZZZ is this a problem?
     end
 
     # A boolean that indicates whether rows in result sets should be returned
