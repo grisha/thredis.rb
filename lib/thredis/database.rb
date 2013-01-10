@@ -50,11 +50,24 @@ module Thredis
 
     end
 
-    def initialize( config={} )
+    def initialize( config={}, results_as_hash=nil )
       @redis = Redis.new(config)
       if @redis.client.db != 0
         raise ArgumentError, "Thredis only supports database 0"
       end
+      @results_as_hash = results_as_hash
+      if block_given?
+        yield self
+        close
+      end
+    end
+
+    def close
+      @redis = nil
+    end
+
+    def closed?
+      @redis.nil?
     end
 
     def last_insert_row_id
@@ -75,14 +88,6 @@ module Thredis
     # the overhead of a useless type translator. (See the Translator class.)
     def translator
       @translator ||= Translator.new
-    end
-
-    # Installs (or removes) a block that will be invoked for every access
-    # to the database. If the block returns 0 (or +nil+), the statement
-    # is allowed to proceed. Returning 1 causes an authorization error to
-    # occur, and returning 2 causes the access to be silently denied.
-    def authorizer( &block )
-      self.authorizer = block
     end
 
     # Returns a Statement object representing the given SQL. This does not
@@ -134,7 +139,7 @@ Support for bind parameters as *args will be removed in 2.0.0.
         eowarn
       end
 
-      stmt = bind_vars.empty? ? Thredis::Statement.new(self, sql) : prepare(sql)
+      stmt = bind_vars.empty? ? Thredis::Statement.new(self, sql, false) : prepare(sql)
       if stmt
         stmt.bind_params(bind_vars) unless bind_vars.empty?
         columns = stmt.columns

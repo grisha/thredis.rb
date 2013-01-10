@@ -14,25 +14,30 @@ module Thredis
   class Statement
     include Enumerable
 
-    def initialize( connection, sql, prepare_only=false )
+    def initialize(connection, sql, prepare_only=true)
+      raise ArgumentError, "Connection closed" if connection.closed?
+      raise TypeError, "SQL is nil" if sql.nil?
       @connection = connection
       @sql = sql
       @params = []
+      @done = nil
       @prepare_only = prepare_only
       query_thredis(prepare_only)
     end
 
     def step
       query_thredis(false) if @rows.nil? || @prepare_only
+      @done = true if @rows && @rows.empty?
       @rows.shift if @rows
     end
 
     def close
+      raise Thredis::Exception, "Statement already closed" if closed? 
       @rows = nil
     end
 
     def bind_param(index, var)
-      @params[index-1] = var
+      @params[index-1] = var.nil? ? ":NULL" : ( var =~ /^:/ ? ':'+var : var )
     end
 
     # Binds the given variables to the corresponding placeholders in the SQL
@@ -106,7 +111,7 @@ module Thredis
     end
 
     def done?
-      !active?
+      !!@done
     end
 
     def closed?
@@ -123,8 +128,12 @@ module Thredis
       @columns.size
     end
 
+    def column_name(i)
+      @columns && @columns[i] && @columns[i].first
+    end
+
     def reset!
-      @rows = nil
+      @rows = @done = nil
     end
 
     def each
@@ -133,6 +142,10 @@ module Thredis
         break self if val.nil?
         yield val
       end
+    end
+
+    def clear_bindings!
+      @params = []
     end
 
     # Return an array of the column names for this statement. Note that this
@@ -160,14 +173,15 @@ module Thredis
     end
 
     private
-    def convert_type(rows, columns)
-      rows.each do |row|
-        for i in 0...row.size
-          row[i] = Integer(row[i]) if columns[i].last == 'int'
-        end
-      end
-      rows
-    end
+    #ZZZ
+    # def convert_type(rows, columns)
+    #   rows.each do |row|
+    #     for i in 0...row.size
+    #       row[i] = Integer(row[i]) if columns[i].last == 'int'
+    #     end
+    #   end
+    #   rows
+    # end
 
     def query_thredis(prepare_only)
       if prepare_only
@@ -180,7 +194,7 @@ module Thredis
         @rows, @columns = [], []
       else
         @columns = @rows.shift
-        @rows = convert_type(@rows, @columns)
+##        @rows = convert_type(@rows, @columns)
       end
     end
   end

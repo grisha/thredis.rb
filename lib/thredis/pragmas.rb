@@ -220,9 +220,6 @@ module Thredis
       stmt    = prepare "PRAGMA table_info(#{table})"
       columns = stmt.columns
 
-      needs_tweak_default =
-        version_compare(Thredis.libversion.to_s, "3.3.7") > 0
-
       result = [] unless block_given?
       stmt.each do |row|
         new_row = Hash[columns.zip(row)]
@@ -232,8 +229,6 @@ module Thredis
         if(Object.const_defined?(:ActiveRecord))
           new_row['notnull'] = new_row['notnull'].to_s
         end
-
-        tweak_default(new_row) if needs_tweak_default
 
         if block_given?
           yield new_row
