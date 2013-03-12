@@ -34,6 +34,7 @@ module Thredis
   # hashes, then the results will all be indexible by field name.
   class Database
     attr_reader :collations, :redis
+    attr_accessor :changes
 
     include Pragmas
 
@@ -60,6 +61,7 @@ module Thredis
         yield self
         close
       end
+      @changes = 0
     end
 
     def close

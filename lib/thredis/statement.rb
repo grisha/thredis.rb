@@ -190,8 +190,8 @@ module Thredis
         @rows = @connection.redis.sql(@sql, *@params)
         @prepare_only = false
       end
-      if @rows == 'OK'
-        @rows, @columns = [], []
+      if @rows.is_a? Integer
+        @rows, @columns, @connection.changes = [], [], @rows
       else
         @columns = @rows.shift
 ##        @rows = convert_type(@rows, @columns)
