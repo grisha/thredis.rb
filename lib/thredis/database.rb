@@ -73,7 +73,7 @@ module Thredis
     end
 
     def last_insert_row_id
-      nil # not supported here ZZZ is this a problem?
+      execute("SELECT last_insert_rowid()")[0][0]
     end
 
     # A boolean that indicates whether rows in result sets should be returned

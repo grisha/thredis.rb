@@ -400,7 +400,7 @@ module ActiveRecord
 
       def primary_key(table_name) #:nodoc:
         column = table_structure(table_name).find { |field|
-          field['pk'] == "1"
+          field['pk'] == 1
         }
         column && column['name']
       end
